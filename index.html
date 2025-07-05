@@ -2,90 +2,1514 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моя Рулетка Кейсов</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Случайный Подарок</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Общие стили */
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1a1a1a; /* Очень темный фон */
+            color: #e0e0e0; /* Светлый текст */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden; /* Избегаем горизонтальной прокрутки */
+            -webkit-font-smoothing: antialiased; /* Сглаживание шрифтов для WebKit */
+            -moz-osx-font-smoothing: grayscale; /* Сглаживание шрифтов для Firefox */
+        }
+        .container {
+            max-width: 600px; /* Максимальная ширина для больших экранов */
+            width: 100%;
+            background-color: #212121; /* Чуть светлее, чем body */
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+            position: relative; /* Для позиционирования заголовка и кнопки закрытия */
+            padding-bottom: 70px; /* Отступ для нижнего меню */
+            min-height: calc(100vh - 70px); /* Занимает почти всю высоту */
+        }
+        h1, h2 {
+            color: #61affe; /* Акцентный цвет, как на скринах */
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* Верхняя панель */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .header-bar h1 {
+            flex-grow: 1;
+            margin: 0;
+            font-size: 1.5em;
+        }
+        .close-button {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
+        /* Кнопки Stars */
+        .stars-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .stars-button {
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 20px; /* Овальные кнопки */
+            padding: 8px 20px;
+            margin: 0 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        .stars-button:hover:not(.active) {
+            background-color: #444;
+        }
+        .stars-button.active {
+            background-color: #61affe;
+            border-color: #61affe;
+        }
+        .stars-button img {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+
+        /* Секции экрана */
+        .screen-section {
+            display: none; /* Скрываем все экраны по умолчанию */
+            padding: 10px 0;
+        }
+        .screen-section.active {
+            display: block; /* Показываем активный экран */
+        }
+
+        /* Выбор Кейса */
+        .case-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 2-3 колонки в зависимости от ширины */
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .case-card {
+            background-color: #2c2c2c;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 2px solid transparent;
+        }
+        .case-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        }
+        .case-card.active {
+            border-color: #61affe;
+        }
+        .case-card h3 {
+            margin-top: 0;
+            color: #fff;
+            font-size: 1.1em;
+        }
+        .case-card p {
+            margin: 5px 0;
+            color: #bbb;
+            font-size: 0.9em;
+        }
+        .case-card .cost {
+            color: #FFD700; /* Золотой для звезд */
+            font-weight: bold;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .case-card .cost img {
+            width: 18px;
+            height: 18px;
+            margin-right: 5px;
+        }
+        .case-card.free-case {
+            background-color: #388e3c; /* Зеленый для бесплатного кейса */
+        }
+        .case-card.free-case:hover {
+            background-color: #2e7d32;
+        }
+
+        /* Переключатель Демо режима */
+        .demo-mode-toggle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #bbb;
+        }
+        .demo-mode-toggle label {
+            margin-left: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #61affe;
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #61affe;
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(20px);
+            -ms-transform: translateX(20px);
+            transform: translateX(20px);
+        }
+
+        /* Кнопка "Мне повезёт!" */
+        .main-action-button {
+            background-color: #61affe;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 30px;
+            font-size: 1.3em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            width: calc(100% - 0px); /* Учитываем padding контейнера */
+            margin: 20px auto 0;
+            display: block;
+            box-sizing: border-box;
+        }
+        .main-action-button:hover:not(:disabled) {
+            background-color: #4a8dfa;
+        }
+        .main-action-button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .main-action-button span {
+            margin-left: 8px;
+        }
+
+        /* "Вы можете выиграть..." */
+        .winnable-prizes {
+            margin-top: 30px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+        }
+        .winnable-prizes h3 {
+            color: #bbb;
+            font-size: 1.1em;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .winnable-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            justify-content: center;
+        }
+        .winnable-item {
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .winnable-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+        .winnable-item .chance {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .winnable-item .stars-cost {
+            color: #999;
+            font-size: 0.8em;
+        }
+        .winnable-item .stars-cost img {
+            width: 14px;
+            height: 14px;
+            vertical-align: middle;
+            margin-right: 3px;
+        }
+
+        /* Рулетка */
+        .roulette-wheel-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            height: 120px; /* Высота видимой части барабана */
+            margin-bottom: 20px;
+            border: 2px solid #61affe;
+            border-radius: 10px;
+            background-color: #1a1a1a;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .roulette-wheel {
+            display: flex;
+            position: absolute;
+            left: 0;
+            transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); /* Увеличенное время для большей плавности */
+        }
+        .prize-item {
+            min-width: 110px; /* Ширина элемента приза */
+            height: 120px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #2c2c2c; /* Темный фон */
-            color: #ffffff; /* Белый текст */
-        }
-        .container {
-            text-align: center;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 5px;
+            box-sizing: border-box;
+            border-right: 1px solid #333;
             background-color: #3a3a3a;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0; /* Не сжимать элементы */
         }
-        h1 {
-            color: #61dafb; /* Яркий заголовок */
+        .prize-item img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 3px;
         }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 15px 30px;
+        .prize-item p {
+            margin: 0;
+            font-size: 0.8em;
+            color: #bbb;
+            text-align: center;
+        }
+        .prize-item .prize-stars {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        .roulette-pointer {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background-color: red; /* Указатель */
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+        .result-message {
+            font-size: 1.4em;
+            color: #FFD700;
+            font-weight: bold;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .post-spin-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .post-spin-button {
+            background-color: #555;
+            color: #fff;
             border: none;
             border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            flex-grow: 1; /* Чтобы кнопки занимали доступное место */
+            max-width: 150px; /* Ограничим ширину для красивого отображения */
+        }
+        .post-spin-button:hover {
+            background-color: #666;
+        }
+        .post-spin-button.sell { background-color: #f44336; }
+        .post-spin-button.sell:hover { background-color: #da190b; }
+        .post-spin-button.upgrade { background-color: #FFD700; color: #212121;}
+        .post-spin-button.upgrade:hover { background-color: #e0b000; }
+        .post-spin-button.withdraw { background-color: #4CAF50; }
+        .post-spin-button.withdraw:hover { background-color: #45a049; }
+
+        .return-button {
+            background-color: #5a5a5a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .return-button:hover {
+            background-color: #666;
+        }
+
+        /* Инвентарь */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .inventory-item-card {
+            background-color: #2c2c2c;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Распределение содержимого */
+        }
+        .inventory-item-card img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin: 0 auto 5px;
+        }
+        .inventory-item-card h4 {
+            margin: 5px 0;
+            color: #fff;
+            font-size: 1em;
+        }
+        .inventory-item-card p {
+            margin: 3px 0;
+            color: #bbb;
+            font-size: 0.8em;
+        }
+        .inventory-item-card .item-stars {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .inventory-item-card .item-stars img {
+            width: 16px;
+            height: 16px;
+            margin-left: 5px;
+        }
+        .inventory-item-card button {
+            background-color: #61affe;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .inventory-item-card button:hover {
+            background-color: #4a8dfa;
+        }
+        .empty-inventory {
+            text-align: center;
+            color: #aaa;
+            font-size: 1.1em;
+            margin-top: 30px;
+        }
+
+        /* Лидеры */
+        .leaderboard-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+        .leaderboard-item {
+            background-color: #2c2c2c;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .leaderboard-item .rank {
+            font-weight: bold;
+            color: #61affe;
+            font-size: 1.2em;
+            margin-right: 15px;
+            min-width: 30px;
+            text-align: right;
+        }
+        .leaderboard-item .name {
+            flex-grow: 1;
+            color: #fff;
+            font-size: 1.1em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .leaderboard-item .stars {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        .leaderboard-item .stars img {
+            width: 22px;
+            height: 22px;
+            margin-left: 5px;
+        }
+
+        /* Апгрейд подарка */
+        .upgrade-section {
+            padding: 20px;
+            text-align: center;
+        }
+        .upgrade-section h2 {
+            margin-top: 0;
+            color: #61affe;
+        }
+        .upgrade-current-item {
+            background-color: #2c2c2c;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 200px;
+            text-align: center;
+        }
+        .upgrade-current-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+        .upgrade-current-item h4 {
+            margin: 10px 0 5px;
+            color: #fff;
+        }
+        .upgrade-current-item p {
+            margin: 0;
+            color: #bbb;
+        }
+        .upgrade-input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 15px;
+        }
+        .upgrade-input-group label {
+            margin-right: 10px;
+            font-size: 1.1em;
+        }
+        .upgrade-input-group input {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: #fff;
+            width: 120px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+        .upgrade-input-group span.stars-icon {
+            font-size: 1.4em;
+            color: #FFD700;
+            margin-left: 5px;
+        }
+        .upgrade-details p {
+            margin: 5px 0;
+            font-size: 1em;
+            color: #ccc;
+        }
+        .upgrade-details .chance-value {
+            font-weight: bold;
+            color: #00ff00; /* Зеленый для шанса */
+        }
+        .upgrade-details .cost-value {
+            font-weight: bold;
+            color: #FFD700;
+        }
+        .upgrade-button-final {
+            background-color: #FFD700;
+            color: #212121;
+            border: none;
+            border-radius: 10px;
+            padding: 15px 30px;
             font-size: 1.2em;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.2s ease;
+            margin-top: 25px;
         }
-        button:hover {
-            background-color: #0056b3;
+        .upgrade-button-final:hover:not(:disabled) {
+            background-color: #e0b000;
         }
-        p {
+        .upgrade-button-final:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .upgrade-result-message {
             margin-top: 20px;
-            font-size: 1.1em;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        .upgrade-result-success {
+            color: #4CAF50; /* Зеленый */
+        }
+        .upgrade-result-fail {
+            color: #f44336; /* Красный */
+        }
+        .upgrade-back-button {
+            background-color: #5a5a5a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            margin-top: 30px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .upgrade-back-button:hover {
+            background-color: #6a6a6a;
+        }
+
+
+        /* Нижнее меню */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #2c2c2c;
+            border-top: 1px solid #3a3a3a;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #aaa;
+            font-size: 0.8em;
+            text-decoration: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            min-width: 60px; /* Для лучшего размещения на мобильных */
+        }
+        .nav-item:hover {
+            background-color: #3a3a3a;
+            color: #fff;
+        }
+        .nav-item.active {
+            color: #61affe;
+        }
+        .nav-item img {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 3px;
+        }
+
+        /* Медиазапросы для адаптивности */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+            .case-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+            .roulette-wheel-container {
+                height: 100px;
+            }
+            .prize-item {
+                min-width: 90px;
+                height: 100px;
+            }
+            .prize-item img {
+                width: 60px;
+                height: 60px;
+            }
+            .main-action-button {
+                font-size: 1.1em;
+                padding: 12px 25px;
+            }
+            .stars-button {
+                padding: 6px 15px;
+                font-size: 0.9em;
+            }
+            .stars-button img {
+                width: 18px;
+                height: 18px;
+            }
+            .nav-item {
+                font-size: 0.7em;
+            }
+            .nav-item img {
+                width: 20px;
+                height: 20px;
+            }
+            .post-spin-button {
+                max-width: none; /* Убираем ограничение на ширину для мобильных */
+                flex-basis: 48%; /* Примерно 2 кнопки в ряд */
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Добро пожаловать в рулетку!</h1>
-        <p id="status">Нажми кнопку, чтобы начать.</p>
-        <button id="spinButton">Крутить барабан!</button>
+        <div class="header-bar">
+            <h1>Случайный подарок</h1>
+            <div class="stars-buttons">
+                <button class="stars-button active"><img src="images/star.png" alt="Star"> 25</button>
+                <button class="stars-button"><img src="images/star.png" alt="Star"> 50</button>
+            </div>
+            <button class="close-button" onclick="tg.close()">✖</button>
+        </div>
+
+        <div id="mainScreen" class="screen-section active">
+            <div class="case-grid">
+                <div class="case-card free-case" data-case="free">
+                    <h3>Бесплатный Кейс</h3>
+                    <p>Доступен раз в день</p>
+                    <p class="cost">0 <img src="images/star.png" alt="Star"></p>
+                </div>
+                <div class="case-card" data-case="bronze">
+                    <h3>Бронзовый Кейс</h3>
+                    <p>Стандартный набор</p>
+                    <p class="cost">15 <img src="images/star.png" alt="Star"></p>
+                </div>
+                <div class="case-card" data-case="silver">
+                    <h3>Серебряный Кейс</h3>
+                    <p>Шанс на редкие</p>
+                    <p class="cost">50 <img src="images/star.png" alt="Star"></p>
+                </div>
+                <div class="case-card" data-case="gold">
+                    <h3>Золотой Кейс</h3>
+                    <p>Ценные призы</p>
+                    <p class="cost">100 <img src="images/star.png" alt="Star"></p>
+                </div>
+                <div class="case-card" data-case="diamond">
+                    <h3>Бриллиантовый Кейс</h3>
+                    <p>Легендарные призы</p>
+                    <p class="cost">500 <img src="images/star.png" alt="Star"></p>
+                </div>
+            </div>
+
+            <div class="demo-mode-toggle">
+                <label class="switch">
+                    <input type="checkbox" id="demoModeToggle">
+                    <span class="slider"></span>
+                </label>
+                <label for="demoModeToggle">Демо режим</label>
+            </div>
+
+            <button id="mainActionButton" class="main-action-button" disabled>Выберите кейс, чтобы крутить</button>
+
+            <div class="winnable-prizes">
+                <h3>Вы можете выиграть...</h3>
+                <div class="winnable-grid" id="winnablePrizesGrid">
+                    </div>
+            </div>
+        </div>
+
+        <div id="rouletteScreen" class="screen-section">
+            <h2>Крутим <span id="currentCaseNameRoulette"></span>!</h2>
+            <div class="roulette-wheel-container">
+                <div class="roulette-wheel" id="rouletteWheel">
+                    </div>
+                <div class="roulette-pointer"></div>
+            </div>
+            <p id="rouletteResultMessage" class="result-message"></p>
+            <div id="postSpinActions" class="post-spin-actions" style="display:none;">
+                <button class="post-spin-button sell" data-action="sell">Продать (<span id="sellPrizeStars"></span> ⭐)</button>
+                <button class="post-spin-button upgrade" data-action="upgrade">Апгрейд</button>
+                <button class="post-spin-button withdraw" data-action="withdraw">Вывести</button>
+            </div>
+            <button id="spinAgainButton" class="main-action-button" style="display:none;">Крутить еще раз</button>
+            <button id="backToMainFromRoulette" class="return-button">Вернуться к выбору кейсов</button>
+        </div>
+
+        <div id="inventoryScreen" class="screen-section">
+            <h2>Ваш Инвентарь</h2>
+            <div id="inventoryGrid" class="inventory-grid">
+                <p class="empty-inventory">Ваш инвентарь пуст. Откройте кейс!</p>
+            </div>
+            <button id="backFromInventory" class="return-button">Вернуться</button>
+        </div>
+
+        <div id="leadersScreen" class="screen-section">
+            <h2>Топ Игроков</h2>
+            <ul class="leaderboard-list" id="leaderboardList">
+                <li class="leaderboard-item">
+                    <span class="rank">1.</span>
+                    <span class="name">Lehakaraba</span>
+                    <span class="stars">10000 <img src="images/star.png" alt="Stars"></span>
+                </li>
+                <li class="leaderboard-item">
+                    <span class="rank">2.</span>
+                    <span class="name">User2</span>
+                    <span class="stars">8500 <img src="images/star.png" alt="Stars"></span>
+                </li>
+                <li class="leaderboard-item">
+                    <span class="rank">3.</span>
+                    <span class="name">User3</span>
+                    <span class="stars">7000 <img src="images/star.png" alt="Stars"></span>
+                </li>
+            </ul>
+            <button id="backFromLeaders" class="return-button">Вернуться</button>
+        </div>
+
+        <div id="upgradeScreen" class="screen-section">
+            <h2>Апгрейд Подарка</h2>
+            <div class="upgrade-current-item" id="upgradeCurrentItemDisplay">
+                </div>
+
+            <div class="upgrade-input-group">
+                <label for="upgradeTargetStarsInput">Целевая стоимость:</label>
+                <input type="number" id="upgradeTargetStarsInput" value="30" min="1" step="5">
+                <span class="stars-icon">⭐</span>
+            </div>
+            <div class="upgrade-details">
+                <p>Стоимость апгрейда: <span id="upgradeCostDisplay" class="cost-value">0</span> <span class="stars-icon">⭐</span></p>
+                <p>Шанс успеха: <span id="upgradeChanceDisplay" class="chance-value">0</span>%</p>
+            </div>
+            <button id="executeUpgradeButton" class="upgrade-button-final" disabled>Апгрейдить!</button>
+            <p id="upgradeResultMessage" class="upgrade-result-message"></p>
+            <button id="backFromUpgrade" class="upgrade-back-button">Отмена</button>
+        </div>
+
     </div>
 
+    <nav class="bottom-nav">
+        <a class="nav-item active" data-screen="mainScreen">
+            <img src="images/play.png" alt="Играть">
+            <span>Играть</span>
+        </a>
+        <a class="nav-item" data-screen="inventoryScreen">
+            <img src="images/inventory.png" alt="Инвентарь">
+            <span>Инвентарь</span>
+        </a>
+        <a class="nav-item" data-screen="leadersScreen">
+            <img src="images/leaderboard.png" alt="Лидеры">
+            <span>Лидеры</span>
+        </a>
+        <a class="nav-item" data-screen="profileScreen">
+            <img src="images/profile.png" alt="Профиль">
+            <span>Профиль</span>
+        </a>
+    </nav>
+
     <script>
-        // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
         tg.ready();
-        tg.expand(); // Разворачиваем WebApp на весь экран
+        tg.expand();
+        tg.MainButton.setText("Выберите кейс, чтобы крутить");
+        tg.MainButton.show();
+        tg.MainButton.disable();
 
-        const spinButton = document.getElementById('spinButton');
-        const statusText = document.getElementById('status');
+        // DOM элементы
+        const mainScreen = document.getElementById('mainScreen');
+        const rouletteScreen = document.getElementById('rouletteScreen');
+        const inventoryScreen = document.getElementById('inventoryScreen');
+        const leadersScreen = document.getElementById('leadersScreen');
+        const upgradeScreen = document.getElementById('upgradeScreen');
 
-        spinButton.addEventListener('click', () => {
-            statusText.textContent = "Барабан крутится...";
-            spinButton.disabled = true;
+        const caseCards = document.querySelectorAll('.case-card');
+        const mainActionButton = document.getElementById('mainActionButton');
+        const winnablePrizesGrid = document.getElementById('winnablePrizesGrid');
+        const demoModeToggle = document.getElementById('demoModeToggle');
 
-            // Здесь будет логика рулетки и оплаты Telegram Stars
-            // Пока просто имитация
+        const currentCaseNameRoulette = document.getElementById('currentCaseNameRoulette');
+        const rouletteWheel = document.getElementById('rouletteWheel');
+        const rouletteResultMessage = document.getElementById('rouletteResultMessage');
+        const postSpinActionsDiv = document.getElementById('postSpinActions');
+        const sellPrizeStarsSpan = document.getElementById('sellPrizeStars');
+        const spinAgainButton = document.getElementById('spinAgainButton');
+        const backToMainFromRouletteButton = document.getElementById('backToMainFromRoulette');
+        
+        const inventoryGrid = document.getElementById('inventoryGrid');
+        const backFromInventoryButton = document.getElementById('backFromInventory');
+
+        const leaderboardList = document.getElementById('leaderboardList');
+        const backFromLeadersButton = document.getElementById('backFromLeaders');
+
+        const upgradeCurrentItemDisplay = document.getElementById('upgradeCurrentItemDisplay');
+        const upgradeCurrentStarsDisplay = document.getElementById('upgradeCurrentStarsDisplay');
+        const upgradeTargetStarsInput = document.getElementById('upgradeTargetStarsInput');
+        const upgradeCostDisplay = document.getElementById('upgradeCostDisplay');
+        const upgradeChanceDisplay = document.getElementById('upgradeChanceDisplay');
+        const executeUpgradeButton = document.getElementById('executeUpgradeButton');
+        const upgradeResultMessage = document.getElementById('upgradeResultMessage');
+        const backFromUpgradeButton = document.getElementById('backFromUpgrade');
+
+        const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+        const postSpinButtons = document.querySelectorAll('#postSpinActions .post-spin-button');
+
+        let selectedCaseData = null; // Будет хранить данные о выбранном кейсе
+        let isDemoMode = false;
+        let lastWonPrize = null; // Для кнопок "Продать/Апгрейд/Вывести"
+
+        // --- ДАННЫЕ О КЕЙСАХ И ПРИЗАХ ---
+        // (Добавил больше призов, чтобы было интереснее)
+        const prizeImages = {
+            "Мишка": "images/bear.png",
+            "Цветы": "images/flowers.png",
+            "Кольцо": "images/ring.png",
+            "Машина": "images/car.png",
+            "Дом": "images/house.png",
+            "Монета": "images/coin.png",
+            "Ракета": "images/rocket.png",
+            "Торт": "images/cake.png",
+            "Сердце": "images/heart.png",
+            "Кубок": "images/cup.png",
+            "Роза": "images/rose.png",
+            "Книга": "images/book.png",
+            "Камера": "images/camera.png",
+            "Бриллиант": "images/diamond.png",
+            "Корона": "images/crown.png",
+            "Щит": "images/shield.png",
+            "Пусто": "images/empty.png", // для обозначения пустого выигрыша в бесплатных
+            "Star": "images/star.png", // Иконка звезды для цен
+            "Play": "images/play.png",
+            "Inventory": "images/inventory.png",
+            "Leaderboard": "images/leaderboard.png",
+            "Profile": "images/profile.png",
+            "default": "images/default.png" // Если изображение не найдено
+        };
+
+        const cases = {
+            "free": {
+                id: "free", name: "Бесплатный Кейс", cost: 0,
+                prizes: [
+                    { name: "Монета", stars: 1, chance: 30 },
+                    { name: "Мишка", stars: 15, chance: 25 },
+                    { name: "Цветы", stars: 50, chance: 15 },
+                    { name: "Книга", stars: 20, chance: 10 },
+                    { name: "Пусто", stars: 0, chance: 20 } // Шанс ничего не получить
+                ],
+                daily_limit: true
+            },
+            "bronze": {
+                id: "bronze", name: "Бронзовый Кейс", cost: 15,
+                prizes: [
+                    { name: "Мишка", stars: 15, chance: 30 },
+                    { name: "Роза", stars: 25, chance: 25 },
+                    { name: "Торт", stars: 50, chance: 20 },
+                    { name: "Сердце", stars: 30, chance: 15 },
+                    { name: "Монета", stars: 5, chance: 10 }
+                ]
+            },
+            "silver": {
+                id: "silver", name: "Серебряный Кейс", cost: 50,
+                prizes: [
+                    { name: "Цветы", stars: 50, chance: 25 },
+                    { name: "Кольцо", stars: 100, chance: 20 },
+                    { name: "Камера", stars: 75, chance: 20 },
+                    { name: "Ракета", stars: 500, chance: 10 },
+                    { name: "Кубок", stars: 120, chance: 15 },
+                    { name: "Мишка", stars: 15, chance: 10 }
+                ]
+            },
+            "gold": {
+                id: "gold", name: "Золотой Кейс", cost: 100,
+                prizes: [
+                    { name: "Кольцо", stars: 100, chance: 25 },
+                    { name: "Кубок", stars: 120, chance: 20 },
+                    { name: "Машина", stars: 500, chance: 15 },
+                    { name: "Бриллиант", stars: 300, chance: 15 },
+                    { name: "Дом", stars: 1000, chance: 5 },
+                    { name: "Ракета", stars: 500, chance: 10 },
+                    { name: "Сердце", stars: 30, chance: 10 }
+                ]
+            },
+            "diamond": {
+                id: "diamond", name: "Бриллиантовый Кейс", cost: 500,
+                prizes: [
+                    { name: "Машина", stars: 500, chance: 25 },
+                    { name: "Бриллиант", stars: 300, chance: 20 },
+                    { name: "Дом", stars: 1000, chance: 15 },
+                    { name: "Корона", stars: 2000, chance: 5 },
+                    { name: "Щит", stars: 750, chance: 10 },
+                    { name: "Кольцо", stars: 100, chance: 15 },
+                    { name: "Кубок", stars: 120, chance: 10 }
+                ]
+            }
+        };
+
+        // --- Вспомогательные функции ---
+        function showScreen(screenElement) {
+            document.querySelectorAll('.screen-section').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            screenElement.classList.add('active');
+
+            // Обновляем текст MainButton в зависимости от экрана
+            if (screenElement === mainScreen) {
+                tg.MainButton.show();
+                updateMainButton();
+            } else {
+                tg.MainButton.hide();
+            }
+        }
+
+        function updateMainButton() {
+            if (selectedCaseData) {
+                const cost = isDemoMode ? 0 : selectedCaseData.cost;
+                tg.MainButton.setText(`Мне повезёт! ${cost} ⭐`);
+                tg.MainButton.enable();
+            } else {
+                tg.MainButton.setText("Выберите кейс, чтобы крутить");
+                tg.MainButton.disable();
+            }
+        }
+
+        function populateWinnablePrizes(caseId) {
+            winnablePrizesGrid.innerHTML = '';
+            const prizeList = cases[caseId].prizes;
+            prizeList.forEach(prize => {
+                if (prize.name === "Пусто") return; // Не показываем "Пусто" в выигрышах
+                const prizeElement = document.createElement('div');
+                prizeElement.classList.add('winnable-item');
+                prizeElement.innerHTML = `
+                    <img src="${prizeImages[prize.name] || prizeImages.default}" alt="${prize.name}">
+                    <p class="chance">${prize.chance}%</p>
+                    <p class="stars-cost">${prize.stars} <img src="${prizeImages.Star}" alt="Star"></p>
+                `;
+                winnablePrizesGrid.appendChild(prizeElement);
+            });
+        }
+
+        function populateRouletteWheelForSpin(caseData, wonPrize) {
+            rouletteWheel.innerHTML = '';
+            const prizeList = caseData.prizes.filter(p => p.name !== "Пусто"); // Не показываем "Пусто" на барабане
+            const totalItemsForSpin = 60; // Увеличим количество элементов для более длинной анимации
+
+            // Заполняем начало барабана случайными призами
+            for (let i = 0; i < totalItemsForSpin - 1; i++) {
+                const prize = prizeList[Math.floor(Math.random() * prizeList.length)];
+                const prizeElement = createPrizeElement(prize);
+                rouletteWheel.appendChild(prizeElement);
+            }
+
+            // Добавляем выигрышный приз в конце, чтобы он выпал
+            const finalPrizeElement = createPrizeElement(wonPrize);
+            rouletteWheel.appendChild(finalPrizeElement);
+            finalPrizeElement.dataset.finalPrize = "true"; // Отмечаем выигрышный элемент
+
+            const itemWidth = rouletteWheel.children[0].offsetWidth; // Ширина одного элемента
+            const centerOffset = (rouletteWheel.offsetWidth / 2) - (itemWidth / 2); // Смещение для центрирования
+
+            // Целевая позиция: выигрышный приз должен остановиться где-то в середине видимой области
+            // Выбираем позицию где-то в последних 5-10 элементах, чтобы была хорошая прокрутка
+            const targetIndex = rouletteWheel.children.length - Math.floor(Math.random() * 5) - 3; // Позиция выигрышного элемента
+            const targetX = -(targetIndex * itemWidth) + centerOffset;
+
+            rouletteWheel.style.transition = 'none'; // Сброс анимации
+            rouletteWheel.style.transform = 'translateX(0px)'; // Начальная позиция
+
             setTimeout(() => {
-                const result = "Мишка"; // Имитация выпавшего приза
-                statusText.textContent = `Тебе выпал: ${result}!`;
-                spinButton.disabled = false;
+                rouletteWheel.style.transition = 'transform 5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                rouletteWheel.style.transform = `translateX(${targetX}px)`;
+            }, 50);
+        }
 
-                // Отправляем результат обратно в бота
-                // Это ОЧЕНЬ ВАЖНАЯ СТРОКА: она передает данные обратно в Python-бота
-                tg.sendData(JSON.stringify({ prize: result, status: "success", cost: 10 }));
+        function createPrizeElement(prize) {
+            const prizeElement = document.createElement('div');
+            prizeElement.classList.add('prize-item');
+            prizeElement.innerHTML = `
+                <img src="${prizeImages[prize.name] || prizeImages.default}" alt="${prize.name}">
+                <p>${prize.name}</p>
+                <p class="prize-stars">${prize.stars} <img src="${prizeImages.Star}" alt="Star"></p>
+            `;
+            prizeElement.dataset.prizeName = prize.name;
+            prizeElement.dataset.prizeStars = prize.stars;
+            return prizeElement;
+        }
 
-            }, 3000); // Имитация кручения 3 секунды
+        function choosePrizeByChance(prizes) {
+            let totalChance = 0;
+            prizes.forEach(prize => totalChance += prize.chance);
+
+            let random = Math.random() * totalChance;
+            let currentSum = 0;
+            for (let i = 0; i < prizes.length; i++) {
+                currentSum += prizes[i].chance;
+                if (random <= currentSum) {
+                    return prizes[i];
+                }
+            }
+            return prizes[0];
+        }
+
+        function calculateUpgradeChance(currentStars, targetStars) {
+            if (targetStars <= currentStars) return 0;
+            const difference = targetStars - currentStars;
+            let chance = 100 - (difference * 0.4); // Уменьшил множитель для более высоких шансов
+            if (chance > 95) chance = 95;
+            if (chance < 5) chance = 5;
+            return Math.round(chance);
+        }
+
+        function calculateUpgradeCost(currentStars, targetStars) {
+            if (targetStars <= currentStars) return 0;
+            const difference = targetStars - currentStars;
+            return Math.round(difference * 0.7); // Стоимость апгрейда - 70% от разницы в стоимости
+        }
+
+
+        // --- ОБРАБОТЧИКИ СОБЫТИЙ ---
+
+        // Выбор кейса
+        caseCards.forEach(card => {
+            card.addEventListener('click', () => {
+                caseCards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                selectedCaseData = cases[card.dataset.case];
+                populateWinnablePrizes(selectedCaseData.id);
+                updateMainButton();
+            });
         });
 
-        // Пример получения данных из бота (если бот что-то отправит в WebApp)
-        tg.onEvent('mainButtonClicked', () => {
-            // Если ты используешь основную кнопку Telegram Web App
-            // tg.sendData(...)
+        // Переключатель демо-режима
+        demoModeToggle.addEventListener('change', () => {
+            isDemoMode = demoModeToggle.checked;
+            updateMainButton();
         });
 
+        // Основная кнопка "Мне повезёт!" (запуск рулетки)
+        tg.MainButton.onClick(() => {
+            if (!selectedCaseData) {
+                tg.showAlert('Пожалуйста, выберите кейс.');
+                return;
+            }
+
+            const cost = isDemoMode ? 0 : selectedCaseData.cost;
+
+            // В реальной версии здесь будет вызов Telegram.WebApp.openInvoice()
+            // if (cost > 0 && !isDemoMode) {
+            //     tg.openInvoice(cost, (status) => {
+            //         if (status === 'paid') {
+            //             startRouletteSpin(selectedCaseData, cost);
+            //         } else {
+            //             tg.showAlert('Оплата отменена или не удалась.');
+            //         }
+            //     });
+            // } else {
+            //     startRouletteSpin(selectedCaseData, cost);
+            // }
+            startRouletteSpin(selectedCaseData, cost); // Пока без реальной оплаты
+        });
+
+        function startRouletteSpin(caseData, cost) {
+            tg.MainButton.hide(); // Скрываем MainButton
+            showScreen(rouletteScreen);
+            currentCaseNameRoulette.textContent = caseData.name;
+            rouletteResultMessage.textContent = 'Крутим...';
+            postSpinActionsDiv.style.display = 'none';
+            spinAgainButton.style.display = 'none';
+            lastWonPrize = null; // Сброс последнего выигрыша
+
+            const wonPrize = choosePrizeByChance(caseData.prizes);
+            populateRouletteWheelForSpin(caseData, wonPrize);
+
+            setTimeout(() => {
+                rouletteResultMessage.textContent = `Выпало: ${wonPrize.name} (${wonPrize.stars} ⭐)!`;
+                lastWonPrize = wonPrize; // Сохраняем выигрыш
+                spinAgainButton.style.display = 'block';
+
+                // Показываем кнопки действий, если приз не "Пусто" и его стоимость > 0
+                if (wonPrize.name !== "Пусто" && wonPrize.stars > 0) {
+                    sellPrizeStarsSpan.textContent = Math.round(wonPrize.stars * 0.5); // Продажа за 50%
+                    postSpinActionsDiv.style.display = 'flex';
+                }
+
+                // Отправляем данные в бота
+                tg.sendData(JSON.stringify({
+                    action: "spin_result",
+                    case_id: caseData.id,
+                    cost_paid: cost,
+                    prize_name: wonPrize.name,
+                    prize_stars: wonPrize.stars,
+                    is_demo: isDemoMode,
+                    // Добавим уникальный ID для отслеживания этого выигрыша, если понадобится
+                    transaction_id: Date.now() + '-' + Math.random().toString(36).substring(2, 9)
+                }));
+
+            }, 5500); // Должно быть немного больше, чем время CSS анимации
+        }
+
+        // Обработчики кнопок после выигрыша
+        postSpinButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const action = e.target.dataset.action;
+                if (!lastWonPrize) {
+                    tg.showAlert('Нет выигранного приза для этого действия.');
+                    return;
+                }
+
+                tg.showConfirm(`Вы уверены, что хотите ${e.target.textContent.toLowerCase()} ${lastWonPrize.name} (${lastWonPrize.stars}⭐)?`, (confirmed) => {
+                    if (confirmed) {
+                        if (action === "sell") {
+                            const sellPrice = Math.round(lastWonPrize.stars * 0.5);
+                            tg.sendData(JSON.stringify({
+                                action: "sell_prize",
+                                prize_name: lastWonPrize.name,
+                                prize_stars: lastWonPrize.stars,
+                                sell_price: sellPrice,
+                                is_demo: isDemoMode
+                            }));
+                            tg.showAlert(`Приз "${lastWonPrize.name}" продан за ${sellPrice} ⭐!`);
+                        } else if (action === "upgrade") {
+                            // Отправляем запрос боту, чтобы он подтвердил апгрейд и, возможно, обновил UI
+                            tg.sendData(JSON.stringify({
+                                action: "request_upgrade_screen",
+                                prize_name: lastWonPrize.name,
+                                prize_stars: lastWonPrize.stars,
+                                // Дополнительные параметры, если приз имеет уникальный ID в инвентаре
+                            }));
+                            // Mini App переключится на экран апгрейда по получении ответа от бота
+                        } else if (action === "withdraw") {
+                             tg.sendData(JSON.stringify({
+                                action: "withdraw_prize",
+                                prize_name: lastWonPrize.name,
+                                prize_stars: lastWonPrize.stars,
+                                is_demo: isDemoMode
+                            }));
+                            tg.showAlert('Запрос на вывод отправлен. Подарок будет выслан в течение 10 часов.');
+                        }
+                        // Скрываем кнопки после действия и очищаем lastWonPrize
+                        postSpinActionsDiv.style.display = 'none';
+                        lastWonPrize = null;
+                    }
+                });
+            });
+        });
+
+
+        // Кнопка "Крутить еще раз" на экране рулетки
+        spinAgainButton.addEventListener('click', () => {
+            selectedCaseData = null; // Сброс выбранного кейса
+            caseCards.forEach(c => c.classList.remove('active'));
+            showScreen(mainScreen);
+            updateMainButton();
+            winnablePrizesGrid.innerHTML = ''; // Очищаем призы для следующего выбора
+        });
+
+        // Кнопка "Вернуться к выбору кейсов"
+        backToMainFromRouletteButton.addEventListener('click', () => {
+            selectedCaseData = null;
+            caseCards.forEach(c => c.classList.remove('active'));
+            showScreen(mainScreen);
+            updateMainButton();
+            winnablePrizesGrid.innerHTML = '';
+        });
+
+        // Навигация по нижнему меню
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(ni => ni.classList.remove('active'));
+                item.classList.add('active');
+                const screenId = item.dataset.screen;
+                if (screenId === 'mainScreen') {
+                    showScreen(mainScreen);
+                } else if (screenId === 'inventoryScreen') {
+                    showScreen(inventoryScreen);
+                    // Запрашиваем инвентарь у бота
+                    tg.sendData(JSON.stringify({ action: "get_inventory" }));
+                    inventoryGrid.innerHTML = '<p class="empty-inventory">Загрузка инвентаря...</p>';
+                } else if (screenId === 'leadersScreen') {
+                    showScreen(leadersScreen);
+                    // Запрашиваем лидеров у бота
+                    tg.sendData(JSON.stringify({ action: "get_leaders" }));
+                    leaderboardList.innerHTML = '<p style="text-align:center; color:#aaa;">Загрузка списка лидеров...</p>';
+                } else if (screenId === 'profileScreen') {
+                    // Пока пустой экран профиля
+                    tg.showAlert('Раздел "Профиль" находится в разработке.');
+                    // Вернуть активный класс к "Играть", если не меняем экран
+                    document.querySelector('.nav-item[data-screen="mainScreen"]').classList.add('active');
+                }
+            });
+        });
+
+        // Кнопки "Назад" с других экранов
+        backFromInventoryButton.addEventListener('click', () => {
+            navItems.forEach(ni => ni.classList.remove('active'));
+            document.querySelector('.nav-item[data-screen="mainScreen"]').classList.add('active');
+            showScreen(mainScreen);
+        });
+        backFromLeadersButton.addEventListener('click', () => {
+            navItems.forEach(ni => ni.classList.remove('active'));
+            document.querySelector('.nav-item[data-screen="mainScreen"]').classList.add('active');
+            showScreen(mainScreen);
+        });
+
+        // Логика экрана апгрейда
+        let currentItemToUpgrade = null; // Предмет из инвентаря, который апгрейдим
+
+        function showUpgradeScreenWithPrize(prize) {
+            currentItemToUpgrade = prize;
+            upgradeCurrentItemDisplay.innerHTML = `
+                <img src="${prizeImages[prize.item_name] || prizeImages.default}" alt="${prize.item_name}">
+                <h4>${prize.item_name}</h4>
+                <p>Текущая стоимость:</p>
+                <p class="item-stars" id="upgradeCurrentStarsDisplay">${prize.stars} <img src="${prizeImages.Star}" alt="Star"></p>
+            `;
+            upgradeTargetStarsInput.value = prize.stars + 15; // Предлагаем +15 по умолчанию
+            upgradeTargetStarsInput.min = prize.stars + 1; // Нельзя апгрейдить на меньше или равно
+            updateUpgradeCalculations();
+            upgradeResultMessage.textContent = '';
+            showScreen(upgradeScreen);
+        }
+
+        upgradeTargetStarsInput.addEventListener('input', updateUpgradeCalculations);
+
+        function updateUpgradeCalculations() {
+            if (!currentItemToUpgrade) return;
+            const currentStars = currentItemToUpgrade.stars;
+            const targetStars = parseInt(upgradeTargetStarsInput.value);
+
+            if (isNaN(targetStars) || targetStars <= currentStars) {
+                upgradeChanceDisplay.textContent = '0';
+                upgradeCostDisplay.textContent = '0';
+                executeUpgradeButton.disabled = true;
+                return;
+            }
+
+            const chance = calculateUpgradeChance(currentStars, targetStars);
+            const cost = calculateUpgradeCost(currentStars, targetStars);
+
+            upgradeChanceDisplay.textContent = chance;
+            upgradeCostDisplay.textContent = cost;
+            executeUpgradeButton.disabled = false;
+        }
+
+        executeUpgradeButton.addEventListener('click', () => {
+            if (!currentItemToUpgrade) return;
+            executeUpgradeButton.disabled = true;
+            upgradeResultMessage.textContent = "Апгрейдим...";
+            upgradeResultMessage.className = 'upgrade-result-message'; // Сброс классов
+
+            const currentStars = currentItemToUpgrade.stars;
+            const targetStars = parseInt(upgradeTargetStarsInput.value);
+            const upgradeCost = parseInt(upgradeCostDisplay.textContent);
+            const successChance = parseInt(upgradeChanceDisplay.textContent);
+
+            // Имитация оплаты Stars (в реальной версии здесь будет openInvoice)
+            // if (upgradeCost > 0 && !isDemoMode) {
+            //     tg.openInvoice(upgradeCost, (status) => {
+            //         if (status === 'paid') {
+            //             processUpgradeResult(isDemoMode ? true : Math.random() * 100 < successChance, currentItemToUpgrade, targetStars, upgradeCost);
+            //         } else {
+            //             upgradeResultMessage.textContent = 'Апгрейд отменен или оплата не удалась.';
+            //             upgradeResultMessage.classList.add('upgrade-result-fail');
+            //             executeUpgradeButton.disabled = false;
+            //         }
+            //     });
+            // } else {
+            //     processUpgradeResult(isDemoMode ? true : Math.random() * 100 < successChance, currentItemToUpgrade, targetStars, upgradeCost);
+            // }
+            // Отправляем запрос на апгрейд боту
+            tg.sendData(JSON.stringify({
+                action: "execute_upgrade",
+                item_id: currentItemToUpgrade.item_id, // Важно! Передаем ID предмета из БД
+                original_prize_name: currentItemToUpgrade.item_name,
+                original_prize_stars: currentItemToUpgrade.stars,
+                target_stars: targetStars,
+                upgrade_cost: upgradeCost,
+                success_chance: successChance,
+                is_demo: isDemoMode
+            }));
+             // Бот сам сообщит о результате через "message" событие
+             upgradeResultMessage.textContent = 'Ожидаем результата апгрейда от бота...';
+
+
+        });
+
+        backFromUpgradeButton.addEventListener('click', () => {
+            // Возвращаемся в инвентарь
+            navItems.forEach(ni => ni.classList.remove('active'));
+            document.querySelector('.nav-item[data-screen="inventoryScreen"]').classList.add('active');
+            showScreen(inventoryScreen);
+            tg.sendData(JSON.stringify({ action: "get_inventory" })); // Обновляем инвентарь
+        });
+
+
+        // --- ОБРАБОТКА ВХОДЯЩИХ ДАННЫХ ОТ БОТА ---
+        tg.onEvent('message', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log("Received data from bot:", data);
+
+                if (data.action === "show_upgrade_screen" && data.prize_to_upgrade) {
+                    showUpgradeScreenWithPrize(data.prize_to_upgrade);
+                } else if (data.action === "update_inventory" && data.inventory) {
+                    renderInventory(data.inventory);
+                } else if (data.action === "update_leaders" && data.leaders) {
+                    renderLeaders(data.leaders);
+                } else if (data.action === "show_alert" && data.message) {
+                    tg.showAlert(data.message);
+                } else if (data.action === "upgrade_result") {
+                    if (data.success) {
+                        upgradeResultMessage.textContent = `Апгрейд успешен! Ваш приз теперь стоит ${data.new_stars} ⭐!`;
+                        upgradeResultMessage.classList.add('upgrade-result-success');
+                    } else {
+                        upgradeResultMessage.textContent = `Апгрейд не удался! Подарок '${data.original_prize_name}' потерян.`;
+                        upgradeResultMessage.classList.add('upgrade-result-fail');
+                    }
+                    executeUpgradeButton.disabled = false;
+                }
+
+            } catch (e) {
+                console.error("Failed to parse message from bot:", e);
+                tg.showAlert('Ошибка обработки данных от бота.');
+            }
+        });
+
+        // Функция для отрисовки инвентаря
+        function renderInventory(inventoryData) {
+            inventoryGrid.innerHTML = '';
+            if (inventoryData.length === 0) {
+                inventoryGrid.innerHTML = '<p class="empty-inventory">Ваш инвентарь пуст. Откройте кейс!</p>';
+                return;
+            }
+
+            // Группируем предметы по названию и стоимости
+            const groupedInventory = {};
+            inventoryData.forEach(item => {
+                const key = `${item.item_name}-${item.stars}`;
+                if (!groupedInventory[key]) {
+                    groupedInventory[key] = {
+                        item_name: item.item_name,
+                        stars: item.stars,
+                        quantity: 0,
+                        // Сохраняем первый item_id, чтобы можно было его передать для апгрейда
+                        // В реальной системе, возможно, нужен более сложный учет уникальных предметов
+                        item_id: item.item_id
+                    };
+                }
+                groupedInventory[key].quantity += item.quantity || 1; // Учитываем количество
+            });
+
+
+            Object.values(groupedInventory).forEach(item => {
+                const itemCard = document.createElement('div');
+                itemCard.classList.add('inventory-item-card');
+                itemCard.innerHTML = `
+                    <img src="${prizeImages[item.item_name] || prizeImages.default}" alt="${item.item_name}">
+                    <h4>${item.item_name}</h4>
+                    <p class="item-stars">${item.stars} <img src="${prizeImages.Star}" alt="Star"></p>
+                    <p>Кол-во: ${item.quantity}</p>
+                    <button data-item-name="${item.item_name}" data-item-stars="${item.stars}" data-item-id="${item.item_id}" class="upgrade-item-btn">Апгрейд</button>
+                `;
+                inventoryGrid.appendChild(itemCard);
+            });
+
+            document.querySelectorAll('.upgrade-item-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const prizeName = e.target.dataset.itemName;
+                    const prizeStars = parseInt(e.target.dataset.itemStars);
+                    const prizeId = e.target.dataset.itemId; // Получаем ID предмета
+
+                    tg.sendData(JSON.stringify({
+                        action: "request_upgrade_screen",
+                        prize_name: prizeName,
+                        prize_stars: prizeStars,
+                        item_id: prizeId // Передаем ID предмета боту
+                    }));
+                });
+            });
+        }
+
+        // Функция для отрисовки лидеров
+        function renderLeaders(leadersData) {
+            leaderboardList.innerHTML = '';
+            if (leadersData.length === 0) {
+                leaderboardList.innerHTML = '<p style="text-align:center; color:#aaa;">Список лидеров пуст.</p>';
+                return;
+            }
+            leadersData.forEach((leader, index) => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('leaderboard-item');
+                listItem.innerHTML = `
+                    <span class="rank">${index + 1}.</span>
+                    <span class="name">${leader.username || `Пользователь ${leader.user_id}`}</span>
+                    <span class="stars">${leader.total_stars} <img src="${prizeImages.Star}" alt="Stars"></span>
+                `;
+                leaderboardList.appendChild(listItem);
+            });
+        }
+
+
+        // Инициализация - показываем главный экран при старте
+        showScreen(mainScreen);
+        // Загружаем иконки, чтобы они были доступны сразу
+        Object.keys(prizeImages).forEach(key => {
+            const img = new Image();
+            img.src = prizeImages[key];
+        });
     </script>
 </body>
 </html>
